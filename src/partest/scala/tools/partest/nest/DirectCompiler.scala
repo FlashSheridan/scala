@@ -21,6 +21,7 @@ import scala.reflect.io.AbstractFile
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.tools.nsc.{CompilerCommand, Global, Settings}
 import scala.util.chaining._
+import scala.sys.process._
 
 object ExtConsoleReporter {
   def apply(settings: Settings, writer: PrintWriter) = new ConsoleReporter(settings, Console.in, writer, writer).tap(_.shortname = true)
@@ -116,7 +117,7 @@ class DirectCompiler(val runner: Runner) {
       if (command.files.nonEmpty) reportError(command.files.mkString("flags file may only contain compiler options, found: ", space, ""))
     }
 
-    suiteRunner.verbose(s"% scalac ${ sources.map(_.testIdent).mkString(space) }${ if (suiteRunner.debug) " -d " + outDir else ""}")
+    suiteRunner.verbose(s"% compiling ${ sources.map(_.testIdent).mkString(space) }${ if (suiteRunner.debug) " -d " + outDir else ""}")
 
     def execCompile() =
       if (command.shouldStopWithInfo) {
@@ -134,7 +135,22 @@ class DirectCompiler(val runner: Runner) {
         result
       }
 
-    try     { execCompile() }
+    try     {
+        if (suiteRunner.config.optCompilerPath.isEmpty)
+          execCompile()
+        else {
+          val stdout = new StringBuilder
+          val stderr = new StringBuilder
+          val logger = ProcessLogger(stdout append _, stderr append _)
+          val resultCode = (suiteRunner.config.optCompilerPath.get + " " + sources.map(_.getPath).mkString(" ")) ! logger
+          logWriter append stdout
+          logWriter append stderr
+          if (resultCode == 0)
+            runner.genPass()
+          else
+            runner.genFail(s"compilation failed")
+        }
+      }
     catch   { case t: Throwable => reportError(t.getMessage) ; runner.genCrash(t) }
     finally { logWriter.close() }
   }
