@@ -42,7 +42,8 @@ trait RunnerSpec extends Spec with Meta.StdOpts with Interpolation {
   val optBuildPath    = "buildpath"    / "set (relative) path to build jars (ex.: --buildpath build/pack)"                --|
   val optClassPath    = "classpath"    / "set (absolute) path to build classes"                                           --|
   val optSourcePath   = "srcpath"      / "set (relative) path to test source files (ex.: --srcpath pending)"              --|
-  val optCompilerPath   = "compilerpath"      / "set (absolute) path to compiler under test (ex.: --compilerpath /usr/local/bin/scalac)"              --|
+  val optCompilerPath = // Not used during normal Scala testing
+    "compilerpath"      / "set (absolute) path to a different compiler to test (ex.: --compilerpath /usr/local/bin/scalac)"              --|
 
   heading("Test output options:")
   val optShowDiff     = "show-diff"    / "show diffs for failed tests"                       --?
