@@ -135,20 +135,24 @@ class DirectCompiler(val runner: Runner) {
         result
       }
 
+    def execOtherCompiler() = {
+      val stdout = new StringBuilder
+      val stderr = new StringBuilder
+      val logger = ProcessLogger(stdout append _, stderr append _)
+      val resultCode = (suiteRunner.config.optCompilerPath.get + " " + sources.map(_.getPath).mkString(" ")) ! logger
+      logWriter append stdout
+      logWriter append stderr
+      if (resultCode == 0)
+        runner.genPass()
+      else
+        runner.genFail(s"compilation failed")
+    }
+
     try     {
         if (suiteRunner.config.optCompilerPath.isEmpty)
           execCompile()
         else {
-          val stdout = new StringBuilder
-          val stderr = new StringBuilder
-          val logger = ProcessLogger(stdout append _, stderr append _)
-          val resultCode = (suiteRunner.config.optCompilerPath.get + " " + sources.map(_.getPath).mkString(" ")) ! logger
-          logWriter append stdout
-          logWriter append stderr
-          if (resultCode == 0)
-            runner.genPass()
-          else
-            runner.genFail(s"compilation failed")
+          execOtherCompiler()
         }
       }
     catch   { case t: Throwable => reportError(t.getMessage) ; runner.genCrash(t) }
